@@ -1,0 +1,44 @@
+name: codecov
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python "3.12"
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install .[dev]
+    - name: Run Codecov
+      run: |
+        pytest --cov=./adhesin --cov-branch --cov-report=xml
+        cat coverage.xml
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
+        files: coverage.xml
+
+#Flake8 requirement removed for this build    
+#    - name: Lint with flake8
+#      run: |
+        # stop the build if there are Python syntax errors or undefined names
+       # flake8
+    - name: Test with pytest
+      run: |
+        pytest
