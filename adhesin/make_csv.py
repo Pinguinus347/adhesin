@@ -1,22 +1,23 @@
 import csv
+import warnings
 
 #Function to process CdrA data from text file
 def CdrA_processing(filepath, Tomogram, outpath):
     """
-    
-    Takes a text filepath and Tomogram name of the file, and appends it to the csv given by outpath"""
+    Takes a text filepath and Tomogram name of the file, and appends it to the csv given by outpath
+    """
     #There is no return as the function is outputting to the csv file
 
     #Initial parameters are set to OFF/0
     record_lines=False
     Number_objects = 0
     Correct_object=False    
-    
+    line_number = 0
     #With is used so that the file will be closed after the function is finished
     with open(filepath) as f:
         #The code iterates through every line in the text file
         for line in f:
-
+            line_number += 1
             #This first step finds the first incidence of object, sets the correct_object paramter to false as a baseline
             if "object" in line:
                 Correct_object = False
@@ -25,12 +26,9 @@ def CdrA_processing(filepath, Tomogram, outpath):
             if "CdrA" in line:
                 Correct_object = True
                 #The number of times CdrA is printed should correspond to the number of cells containing CdrA in the tomogram
-                print(f"{Tomogram}-Cell{Number_objects}")
+                print(f"{Tomogram}-Cell{Number_objects+1}")
                 #Each CdrA-containing object must be titled with CdrA
                 
-                #This is a workaround to allow the cell to be in a different order than the membrane:
-                #index_cell = line.find("Cell")
-                #cell_number = line[index_cell + len("Cell"):].split('_')[0]
                 #The Number_objects parameter is used to record which cell a CdrA molecule belongs to
                 #Number_objects = cell_number
                 Number_objects = Number_objects + 1
@@ -45,6 +43,9 @@ def CdrA_processing(filepath, Tomogram, outpath):
                     if "contour" in line:
                         record_lines = True
                         Current_contour = Current_contour + 1
+                        check = list(line.strip().split())
+                        if not int(check[1]) == Current_contour - 1 :
+                            raise NotImplementedError("Contour counter and number in file are out of sync, check input file")
                     elif record_lines:
                         record_lines = False
                         if "contflags" in line:
@@ -52,27 +53,11 @@ def CdrA_processing(filepath, Tomogram, outpath):
                             #print("contflags")
                         #This next bit doesnt usually work because if object is in the line, the Correct_object parameter will already be false, but if any other string than contflags bounds the contour (suggesting an error) it should be caught here
                         else:
-                            print(f"Weird in {line} of {Tomogram}")
+                            warnings.warn(f"Found '{line}' at end of contour in line {line_number} of {Tomogram}", UserWarning)
             else:
                 #If the object is wrong data should not be recorded
                 record_lines = False
                 #If the object is correct, data should be recorded if a contour is being read
-            
-            #Previous code where contflags had to be manually added in minority of cases
-            # if Correct_object:
-            #     if "contour" in line:
-            #     #A contour is one molecule, used to determine which molecule a point belongs to, and mark the start of data recording
-            #     #The record_lines parameter is True/False, used to enable the later if statement 
-            #     # to record information between the start and end of a contour
-            #         record_lines = True
-            #         Current_contour = Current_contour+1
-            #     #The contour text itself is not a point, so does not need to be recorded. Continue means that the loop continues
-            #     #** Does this mean that the later if statement is not processed after the completion of the first?
-            #         continue
-            
-            # #Marks the end of each object for some reason. Code ends the recording of point data
-            # if "contflags" in line:
-            #     record_lines = False
             
             #The function is thus set to record after reading 'contour' within an object containing 'CdrA'
             if record_lines:
@@ -80,10 +65,10 @@ def CdrA_processing(filepath, Tomogram, outpath):
                 if "contour" in line:
                     pass
                 elif not line:
-                    print("Hello")
+                    warnings.warn(f"Contour ends with no next line at line {line_number} of {filepath}", UserWarning)
                     pass
                 elif line.isspace():
-                    print("Hi")
+                    warnings.warn(f"Contour ends with space not contflags at line {line_number} of {filepath}", UserWarning)
                     pass
                 else:
                     #list is creating the list. Map is convering the strings into float (as this is the next argument)
