@@ -1,5 +1,21 @@
 import csv
 import warnings
+import os
+import pandas as pd
+#Function to see if the output file already exists
+
+def check_and_create_csv(file_path):
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        # Create the file if it doesn't exist
+        df = pd.DataFrame(columns=['x','y','z','CdrA_molecule','Cell','Tomogram'])
+        df.to_csv(file_path, index=False)
+        print(f"{file_path} has been created.")
+        return True
+    else:
+        print(f"{file_path} already exists.")
+        return False
+
 
 #Function to process CdrA data from text file
 def CdrA_processing(filepath, Tomogram, outpath):
@@ -11,7 +27,7 @@ def CdrA_processing(filepath, Tomogram, outpath):
     #Initial parameters are set to OFF/0
     record_lines=False
     Number_objects = 0
-    Correct_object=False    
+    Correct_object=False
     line_number = 0
     #With is used so that the file will be closed after the function is finished
     with open(filepath) as f:
