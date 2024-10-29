@@ -35,9 +35,7 @@ def contour_processing(Tomogram, obj, filepath, outpath):
     Correct_object=False
     line_number = 0
     with open(filepath) as f:
-        print(obj)
         found = any((obj in line) and ("name" in line) for line in f)
-        print(found)
         if not found:
             raise NotImplementedError("No objects containing the given text could be found")
         else:
@@ -55,7 +53,7 @@ def contour_processing(Tomogram, obj, filepath, outpath):
             if obj in line:
                 Correct_object = True
                 #The number of times CdrA is printed should correspond to the number of cells containing CdrA in the tomogram
-                print(f"{Tomogram}-Cell{Number_objects+1}")
+                print(f"Adding {Tomogram}-Cell{Number_objects+1}")
                 #Each CdrA-containing object must be titled with CdrA
                 
                 #The Number_objects parameter is used to record which cell a CdrA molecule belongs to
