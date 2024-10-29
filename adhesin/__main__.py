@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(
         Please specify the input file(s), output file, and whether to overwrite all existing data.
         The output csv should have columns as specified in the README file; please generate a new csv if unsure.
         Input files should be located in a single folder, and titled in the form [tomgoram].txt
+        Please specify the object title to be read using -object_name, the default is CdrA.
         Further commands are in development to run analysis.""",
         epilog = 'That is how you run this programme!')
 parser.add_argument("-input_path", "--in_pth", nargs = '?', default = 0, type = str,
@@ -18,7 +19,8 @@ parser.add_argument("-output_path", "--out_pth", nargs = '?', default = ".output
                     help="output csv file path [.csv]")
 parser.add_argument("-overwrite", "--over", nargs = '?', default = 'N', type = str,
                     help="Should the programme overwrite data associated with the existing tomogram by default? [Y/N]")
-
+parser.add_argument("-object_name", "--obj", nargs = '?', default = 'CdrA', type = str,
+                    help="What is the component of the 3dmod object name the function should search for? e.g. CdrA. NB - this is case sensitive")
 def main():
     ## Setting up the variables
     args = parser.parse_args()
@@ -26,7 +28,7 @@ def main():
     print(tomo_lst)
     print("Hello", flush=True)
     ## Running the programme
-    if check_and_create_csv(args.out_pth):
+    if check_and_create_csv(args.out_pth, args.obj):
         print("Wrong", flush=True)
         pass
         #if a file has just been written, the above statement is true so there is no need to check for overwriting
@@ -56,7 +58,7 @@ def main():
             print(tomo_lst)
     for i in tomo_lst:
         input_path = args.in_pth + '/' + i + '.txt'
-        CdrA_processing(input_path, i, args.out_pth)
+        contour_processing(i, args.obj, input_path, args.out_pth)
 
 if __name__ == "__main__":
     main()

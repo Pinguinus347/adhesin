@@ -5,13 +5,14 @@ import csv
 import pandas as pd
 import os
 @pytest.mark.parametrize(
-    "input, tomogram, output, expected, expect_raises",
+    "input, tomogram, obj, output, expected, expect_raises",
     [
         #optimal file configuration
         (
             "test_data/CdrA_good.txt",
             "d01t01",
-            "temp/CdrA_read.csv",
+            "CdrA",
+            "CdrA_read.csv",
             "test_data/CdrA_good.csv",
             None,
         ),
@@ -19,45 +20,57 @@ import os
         (
             "test_data/CdrA_contflag.txt",
             "d01t01",
-            "temp/CdrA_read.csv",
+            "CdrA",
+            "CdrA_read.csv",
             "test_data/CdrA_good.csv",
             UserWarning,
         ),
-        #fatal error
+        #fatal error - obj numbers do not match counter
         (
             "test_data/CdrA_error.txt",
             "d01t01",
-            "temp/CdrA_read.csv",
+            "CdrA",
+            "CdrA_read.csv",
             "test_data/CdrA_good.csv",
             NotImplementedError,
         ),
-        # #overwriting warning
-        # (
-        #     "./test_data/CdrA_good.txt",
-        #     "d01t04",
-        #     "./temp/CdrA_good.csv",
-        #     "./test_data/CdrA_good.csv"
-        #     PermissionError,
-        # ),
+        #fatal error - no objects matching the string
+        (
+            "test_data/CdrA_good.txt",
+            "d01t01",
+            "cdrb",
+            "CdrA_read.csv",
+            "test_data/CdrA_good.csv",
+            NotImplementedError,
+        ),
+        #Recording membrane instead
+        (
+            "test_data/CdrA_good.txt",
+            "d01t01",
+            "membrane",
+            "membrane_read.csv",
+            "test_data/membrane_good.csv",
+            None,
+        ),
     ]
 )
-def test_CdrA_processing(input,tomogram,output,expected,expect_raises):
+def test_CdrA_processing(tmp_path, input,tomogram,obj,output,expected,expect_raises):
     """Tests that the import function is working as expected"""
     import adhesin as ad
     # Create a path relative to the test file's location
     input_path = os.path.join(os.path.dirname(__file__), input)
-    print(input_path)
-    output_path = os.path.join(os.path.dirname(__file__), output)
     expected_path = os.path.join(os.path.dirname(__file__), expected)
+    # Create a temporary output path
+    output_path = tmp_path / output
     # Create the output file for writing data into:
-    df = pd.DataFrame(columns=['x','y','z','CdrA_molecule','Cell','Tomogram'])
+    df = pd.DataFrame(columns=['x','y','z',obj,'Cell','Tomogram'])
     df.to_csv(output_path, index=False)
     if expect_raises is NotImplementedError:
         with pytest.raises(expect_raises):
-            ad.CdrA_processing(input_path, tomogram, output_path)
+            ad.contour_processing(tomogram, obj, input_path, output_path)
     elif expect_raises is not None:
         with pytest.warns(expect_raises):
-            ad.CdrA_processing(input_path, tomogram, output_path)
+            ad.contour_processing(tomogram, obj, input_path, output_path)
             with open(output_path, mode='r') as file1, open(expected_path, mode='r') as file2:
                 reader1 = csv.reader(file1)
                 reader2 = csv.reader(file2)
@@ -69,7 +82,7 @@ def test_CdrA_processing(input,tomogram,output,expected,expect_raises):
                     npt.assert_equal(row1, row2)
 
     else:
-        ad.CdrA_processing(input_path, tomogram, output_path)
+        ad.contour_processing(tomogram, obj, input_path, output_path)
         with open(output_path, mode='r') as file1, open(expected_path, mode='r') as file2:
             reader1 = csv.reader(file1)
             reader2 = csv.reader(file2)
@@ -77,3 +90,51 @@ def test_CdrA_processing(input,tomogram,output,expected,expect_raises):
             for row1, row2 in zip(reader1, reader2):
                 # Process rows here
                 npt.assert_equal(row1, row2)
+
+@pytest.mark.parametrize(
+    "filepath, obj, expected, expect_raises",
+    [
+        #file creation successfully
+        (
+            "test.csv",
+            "CdrA",
+            True,
+            None,
+        ),
+        #file exists with correct columns
+        (
+            "test_data/CdrA_good.csv",
+            "CdrA",
+            False,
+            None,
+        ),
+        #fatal error - file exists with incorrect columns
+        (
+            "test_data/membrane_good.csv",
+            "CdrA",
+            False,
+            ValueError,
+        ),
+    ]
+)
+def test_csv_checking(tmp_path,filepath,obj,expected,expect_raises):
+    """Tests that checking for the output csv is working as expected"""
+    import adhesin as ad
+    if expected:
+        temp_file = tmp_path / filepath
+        #Checking the file does not exist before the function is run
+        npt.assert_equal(os.path.exists(temp_file), False)
+        #Function is run and output recorded
+        output = ad.check_and_create_csv(temp_file,obj)
+        #Correct output
+        npt.assert_equal(output,expected)
+        #Checking the file now exists as expected
+        npt.assert_equal(os.path.exists(temp_file), True)
+    else:
+        # Create a path relative to the test file's location
+        input_path = os.path.join(os.path.dirname(__file__), filepath)
+        if expect_raises is not None:
+            with pytest.raises(expect_raises):
+                ad.check_and_create_csv(input_path, obj)
+        else:
+            npt.assert_equal(ad.check_and_create_csv(input_path,obj),expected)

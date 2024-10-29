@@ -4,21 +4,26 @@ import os
 import pandas as pd
 #Function to see if the output file already exists
 
-def check_and_create_csv(file_path):
+def check_and_create_csv(file_path, obj):
     # Check if the file exists
     if not os.path.exists(file_path):
         # Create the file if it doesn't exist
-        df = pd.DataFrame(columns=['x','y','z','CdrA_molecule','Cell','Tomogram'])
+        df = pd.DataFrame(columns=['x','y','z',obj,'Cell','Tomogram'])
         df.to_csv(file_path, index=False)
         print(f"{file_path} has been created.")
         return True
     else:
         print(f"{file_path} already exists.")
+        df = pd.read_csv(file_path)
+        if obj in df.columns:
+            print("Column found in header, all is well")
+        else:
+            raise ValueError("The given output file does not have a column titled [obj]; please chose an alternative output location")
         return False
 
 
-#Function to process CdrA data from text file
-def CdrA_processing(filepath, Tomogram, outpath):
+#Function to process contour data from text file
+def contour_processing(Tomogram, obj, filepath, outpath):
     """
     Takes a text filepath and Tomogram name of the file, and appends it to the csv given by outpath
     """
@@ -29,6 +34,14 @@ def CdrA_processing(filepath, Tomogram, outpath):
     Number_objects = 0
     Correct_object=False
     line_number = 0
+    with open(filepath) as f:
+        print(obj)
+        found = any((obj in line) and ("name" in line) for line in f)
+        print(found)
+        if not found:
+            raise NotImplementedError("No objects containing the given text could be found")
+        else:
+            pass
     #With is used so that the file will be closed after the function is finished
     with open(filepath) as f:
         #The code iterates through every line in the text file
@@ -39,7 +52,7 @@ def CdrA_processing(filepath, Tomogram, outpath):
                 Correct_object = False
             
             #This function records the CdrA molecule of interest, so it starts considering if data should be recorded when CdrA is observed after object - ie an object named with 'CdrA'
-            if "CdrA" in line:
+            if obj in line:
                 Correct_object = True
                 #The number of times CdrA is printed should correspond to the number of cells containing CdrA in the tomogram
                 print(f"{Tomogram}-Cell{Number_objects+1}")
