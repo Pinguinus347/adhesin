@@ -11,7 +11,7 @@ def leng(x1, y1, z1, x2, y2, z2):
     point2 = np.array([x2,y2,z2])
     return np.linalg.norm(point2 - point1)
 def angle(vector1, vector2):
-    """"Calculates the angle between two coordinates in the same row"""
+    """"Calculates the angle between two coordinates given as np arrays"""
     result1 = np.arccos(np.dot(vector1,vector2)/(np.linalg.norm(vector1)*np.linalg.norm(vector2)))
     #The result is converted from radians to degrees
     result2 = np.degrees(result1)
